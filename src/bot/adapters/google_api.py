@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from datetime import datetime
 
 from googleapiclient.discovery import build
@@ -45,8 +46,29 @@ def service_account_credentials_from_json(raw: str):
 
 
 class GoogleCalendarApi:
+    """One client per thread.
+
+    The webhook acknowledges Meta first and books afterwards, in a background
+    thread, so several conversations reach this class at once. The object
+    `build()` returns holds a dict of live connections with no lock around it:
+    two threads sharing it write into the same TLS socket, which fails as
+    `SSLError: RECORD_LAYER_FAILURE` and drops the appointment on the floor.
+
+    Threads are pooled and reused, so this builds once per worker, not once per
+    message.
+    """
+
     def __init__(self, credentials) -> None:
-        self._service = build("calendar", "v3", credentials=credentials, cache_discovery=False)
+        self._credentials = credentials
+        self._local = threading.local()
+
+    @property
+    def _service(self):
+        service = getattr(self._local, "service", None)
+        if service is None:
+            service = build("calendar", "v3", credentials=self._credentials, cache_discovery=False)
+            self._local.service = service
+        return service
 
     def busy(self, calendar_id: str, start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
         response = (
