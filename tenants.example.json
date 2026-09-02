@@ -1,0 +1,40 @@
+{
+  "tenants": [
+    {
+      "phone_number_id": "106540352242922",
+      "access_token_env": "WHATSAPP_TOKEN_PELUQUERIA",
+      "google_calendar_id": "peluqueria@gmail.com",
+      "business": {
+        "name": "Peluquería Rivadavia",
+        "timezone": "America/Argentina/Buenos_Aires",
+        "open_hour": 9,
+        "close_hour": 19,
+        "slot_step_minutes": 30,
+        "days_ahead": 7,
+        "closed_weekdays": [6],
+        "services": [
+          { "id": "corte", "name": "Corte", "duration_minutes": 30 },
+          { "id": "color", "name": "Color y peinado", "duration_minutes": 60 }
+        ]
+      }
+    },
+    {
+      "phone_number_id": "118820134455201",
+      "access_token_env": "WHATSAPP_TOKEN_KINESIO",
+      "google_calendar_id": "kinesiologia@gmail.com",
+      "business": {
+        "name": "Kinesiología Sur",
+        "timezone": "America/Argentina/Buenos_Aires",
+        "open_hour": 8,
+        "close_hour": 20,
+        "slot_step_minutes": 45,
+        "days_ahead": 14,
+        "closed_weekdays": [5, 6],
+        "services": [
+          { "id": "sesion", "name": "Sesión", "duration_minutes": 45 },
+          { "id": "primera", "name": "Primera consulta", "duration_minutes": 90 }
+        ]
+      }
+    }
+  ]
+}
