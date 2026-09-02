@@ -3,6 +3,5 @@ __pycache__/
 .venv/
 .env
 .pytest_cache/
-uv.lock
 service-account.json
 tenants.json

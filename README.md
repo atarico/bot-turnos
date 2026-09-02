@@ -49,8 +49,11 @@ WHATSAPP_TOKEN_PELUQUERIA=...                    # named per tenant in the file
 ```
 
 Access tokens are read from the environment **by name**, so no secret ever
-lands in the tenants file. Any tenant missing its token or calendar id falls
-back to the in-memory adapter instead of crashing the whole deploy.
+lands in the tenants file. A tenant with no token talks to the simulator
+channel, and a tenant with no calendar id books in memory -- but a tenant that
+declares a calendar id with no credentials available **refuses to start**.
+Booking into a fake while every screen says the appointment was confirmed is
+worse than not booting.
 
 ## Design
 
@@ -147,8 +150,23 @@ uv run uvicorn bot.main:app --host 0.0.0.0 --port 8000
 ```
 
 `bot/main.py` picks the real adapter for each side only when its variables are
-present, so a half-configured environment falls back to the fakes instead of
-crashing.
+present, so a half-configured environment falls back to the fakes -- except for
+a declared calendar with no key, which is a misconfiguration and stops the boot.
+
+Credentials come from `GOOGLE_CREDENTIALS_JSON` (the key itself, which is how
+hosting platforms hand secrets over) or `GOOGLE_CREDENTIALS_FILE` (a path, for
+local work). The first wins.
+
+In a container:
+
+```bash
+docker build -t turnos-bot .
+docker run -p 8000:8000 \
+  -e TENANTS_FILE=/config/tenants.json \
+  -e GOOGLE_CREDENTIALS_JSON="$(cat service-account.json)" \
+  -v "$PWD/tenants.json:/config/tenants.json:ro" \
+  turnos-bot
+```
 
 Known gaps, on purpose:
 

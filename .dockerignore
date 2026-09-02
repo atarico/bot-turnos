@@ -1,0 +1,21 @@
+# Secrets. These must never reach a build context: anything copied into an
+# image stays in its layers forever, readable by anyone who pulls it.
+.env
+service-account.json
+tenants.json
+
+# Local environment, rebuilt inside the image anyway.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Not needed at runtime.
+.git/
+.gitignore
+.atl/
+tests/
+scripts/
+README.md
+Dockerfile
+.dockerignore
