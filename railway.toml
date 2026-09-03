@@ -1,0 +1,15 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# One replica, deliberately. Two would break two things at once: sessions live
+# in memory, so a customer bounced to the other instance loses the conversation
+# mid-booking; and the availability check would race across processes, which no
+# amount of in-process locking can fix. Raising this needs Redis behind
+# SessionStorePort first.
+numReplicas = 1

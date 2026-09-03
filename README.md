@@ -153,20 +153,29 @@ uv run uvicorn bot.main:app --host 0.0.0.0 --port 8000
 present, so a half-configured environment falls back to the fakes -- except for
 a declared calendar with no key, which is a misconfiguration and stops the boot.
 
-Credentials come from `GOOGLE_CREDENTIALS_JSON` (the key itself, which is how
-hosting platforms hand secrets over) or `GOOGLE_CREDENTIALS_FILE` (a path, for
-local work). The first wins.
+Both the key and the tenants come from either the content or a path, and the
+content always wins:
 
-In a container:
+| | hosted | local |
+|---|---|---|
+| service account key | `GOOGLE_CREDENTIALS_JSON` | `GOOGLE_CREDENTIALS_FILE` |
+| businesses served | `TENANTS_JSON` | `TENANTS_FILE` |
+
+A hosted container is rebuilt on every deploy and has no disk worth writing to,
+so in production both arrive as environment variables out of the platform's
+secret store. Nothing is mounted and nothing is baked into the image.
 
 ```bash
 docker build -t turnos-bot .
 docker run -p 8000:8000 \
-  -e TENANTS_FILE=/config/tenants.json \
+  -e TENANTS_JSON="$(cat tenants.json)" \
   -e GOOGLE_CREDENTIALS_JSON="$(cat service-account.json)" \
-  -v "$PWD/tenants.json:/config/tenants.json:ro" \
   turnos-bot
 ```
+
+`railway.toml` pins one replica. Two would lose a conversation mid-booking,
+because sessions live in memory, and would race on availability across
+processes -- see the note above.
 
 Known gaps, on purpose:
 

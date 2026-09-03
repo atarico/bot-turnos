@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 CREDENTIALS_JSON = "GOOGLE_CREDENTIALS_JSON"  # the key itself, for hosted deploys
 CREDENTIALS_FILE = "GOOGLE_CREDENTIALS_FILE"  # a path to it, for local development
 
+TENANTS_JSON = "TENANTS_JSON"  # the businesses themselves, for hosted deploys
+TENANTS_FILE = "TENANTS_FILE"  # a path to them, for local development
+
 
 class MisconfiguredTenant(RuntimeError):
     """A business declares a real calendar and we hold no key to reach it.
@@ -111,15 +114,32 @@ def build_tenant(entry: dict, *, credentials=None) -> Tenant:
     )
 
 
+def tenants_document() -> dict | None:
+    """The businesses to serve, or None to fall back to the demo.
+
+    The content wins over the path, for the same reason the key does: a hosted
+    container has nowhere to keep a file.
+    """
+    raw = os.getenv(TENANTS_JSON)
+    if raw:
+        return json.loads(raw)
+
+    path = os.getenv(TENANTS_FILE)
+    if path:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+
+    return None
+
+
 def build_registry() -> TenantRegistry:
     # Resolved once: one service account key serves every tenant.
     credentials = google_credentials()
 
-    path = os.getenv("TENANTS_FILE")
-    if not path:
+    document = tenants_document()
+    if document is None:
         from bot.simulator.app import DEMO_BUSINESS, DEMO_PHONE_NUMBER_ID
 
-        logger.warning("TENANTS_FILE is unset; serving the demo business only")
+        logger.warning("%s and %s are unset; serving the demo business only", TENANTS_JSON, TENANTS_FILE)
         return TenantRegistry(
             [
                 build_tenant(
@@ -132,8 +152,9 @@ def build_registry() -> TenantRegistry:
             ]
         )
 
-    raw = json.loads(Path(path).read_text(encoding="utf-8"))
-    return TenantRegistry([build_tenant(entry, credentials=credentials) for entry in raw["tenants"]])
+    return TenantRegistry(
+        [build_tenant(entry, credentials=credentials) for entry in document["tenants"]]
+    )
 
 
 def _as_dict(config: BusinessConfig) -> dict:
